@@ -3,193 +3,287 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IHSG Portfolio Pro - Manual Save</title>
+    <title>Porto to the Moon - Updated</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Bungee&family=Fredoka+One&display=swap');
+        
+        :root {
+            --moon-orange: #ff5f1f;
+            --slime-green: #9dff00;
+            --space-purple: #8e44ad;
+        }
+
+        body { 
+            font-family: 'Fredoka One', cursive; 
+            background-color: var(--space-purple); 
+            background-image: radial-gradient(var(--space-purple) 20%, #732d91 100%);
+            color: white; 
+            min-height: 100vh;
+        }
+        
+        .moon-font { font-family: 'Bungee', cursive; }
+        
+        .card-cartoon {
+            background: white;
+            border: 4px solid #000;
+            box-shadow: 8px 8px 0px #000;
+            color: #000;
+            border-radius: 20px;
+        }
+
+        input, select {
+            border: 3px solid #000 !important;
+            border-radius: 12px !important;
+            color: #000;
+        }
+
+        .tab-active {
+            background-color: var(--slime-green) !important;
+            color: black !important;
+            transform: translateY(-5px);
+            box-shadow: 0px 5px 0px #000;
+        }
+
+        .btn-launch {
+            background-color: var(--moon-orange);
+            color: white;
+            border: 3px solid #000;
+            box-shadow: 4px 4px 0px #000;
+            transition: all 0.1s;
+        }
+        .btn-launch:active {
+            transform: translate(2px, 2px);
+            box-shadow: 0px 0px 0px #000;
+        }
+
+        .btn-utility {
+            background: #000;
+            color: #fff;
+            font-size: 10px;
+            padding: 6px 12px;
+            border-radius: 99px;
+            text-transform: uppercase;
+            font-weight: 900;
+            transition: all 0.2s;
+        }
+        .btn-utility:hover {
+            background: var(--moon-orange);
+            transform: scale(1.05);
+        }
+        .hidden { display: none; }
+
+        .moon-slice { transition: transform 0.3s; cursor: pointer; }
+        .moon-slice:hover { transform: scale(1.05); filter: brightness(1.1); }
+        .crater { fill: rgba(0,0,0,0.1); pointer-events: none; }
+    </style>
 </head>
-<body class="bg-slate-50 p-4 md:p-8">
+<body class="p-4 md:p-8">
     <div class="max-w-6xl mx-auto">
-        <header class="flex justify-between items-center mb-6">
-            <div>
-                <h1 class="text-3xl font-bold text-slate-800">IHSG Portfolio Dashboard</h1>
-                <p class="text-slate-500 italic">Data Source: Google Finance CSV</p>
-            </div>
-            <div class="flex gap-2">
-                <button onclick="exportData()" class="bg-slate-800 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-slate-700 transition flex items-center gap-2">
-                    <span>💾</span> Save to Drive (JSON)
-                </button>
-                <input type="file" id="importFile" class="hidden" onchange="importData(event)">
-                <button onclick="document.getElementById('importFile').click()" class="bg-white border border-slate-300 text-slate-700 px-4 py-2 rounded-lg text-sm font-bold hover:bg-slate-50 transition">
-                    📂 Load Backup
-                </button>
-            </div>
+        
+        <!-- TOP UTILITY BAR -->
+        <div class="flex justify-end gap-3 mb-4">
+            <button onclick="exportData()" class="btn-utility">Back Up Data</button>
+            <button onclick="document.getElementById('importFile').click()" class="btn-utility">Restore Data</button>
+            <input type="file" id="importFile" class="hidden" onchange="importData(event)">
+        </div>
+
+        <!-- HEADER -->
+        <header class="flex flex-col items-center mb-10 text-center">
+            <h1 class="text-5xl md:text-7xl moon-font text-white drop-shadow-[6px_6px_0px_rgba(0,0,0,1)] italic">
+                PORTO <span class="text-[var(--slime-green)]">TO THE MOON</span>
+            </h1>
+            <p class="mt-4 text-yellow-300 moon-font tracking-tighter uppercase">Fuel your rocket, let's fly!</p>
         </header>
 
-        <!-- Navigasi Tab -->
-        <div class="flex gap-4 mb-6 border-b border-slate-200">
-            <button onclick="switchTab('portfolio')" id="tab-portfolio" class="py-2 px-4 font-bold border-b-2 border-blue-600 text-blue-600">Portfolio Aktif</button>
-            <button onclick="switchTab('logs')" id="tab-logs" class="py-2 px-4 font-bold text-slate-400">Log Transaksi</button>
-            <button onclick="switchTab('performance')" id="tab-performance" class="py-2 px-4 font-bold text-slate-400">Performance (PNL)</button>
-        </div>
+        <!-- NAVIGATION TABS -->
+        <nav class="flex flex-wrap gap-2 mb-8">
+            <button onclick="switchTab('portfolio')" id="tab-portfolio" class="tab-active flex-1 min-w-[120px] py-4 rounded-2xl border-4 border-black bg-white text-black font-black uppercase">My Rocket</button>
+            <button onclick="switchTab('calculator')" id="tab-calculator" class="flex-1 min-w-[120px] py-4 rounded-2xl border-4 border-black bg-white text-black font-black uppercase">Profit Calc</button>
+            <button onclick="switchTab('logs')" id="tab-logs" class="flex-1 min-w-[120px] py-4 rounded-2xl border-4 border-black bg-white text-black font-black uppercase">Flight Log</button>
+        </nav>
 
-        <!-- FORM INPUT & STATS (Hanya Muncul di Tab Portfolio) -->
+        <!-- SECTION: MY ROCKET (PORTFOLIO) -->
         <div id="section-portfolio">
-            <div class="bg-white p-6 rounded-xl shadow-sm border mb-6">
-                <div class="grid grid-cols-1 md:grid-cols-6 gap-4">
-                    <input id="date" type="date" class="border p-2 rounded text-sm bg-slate-50">
-                    <input id="ticker" type="text" placeholder="KODE (e.g. BBCA)" class="border p-2 rounded uppercase font-bold text-center focus:ring-2 focus:ring-blue-500 outline-none">
-                    <select id="tradeType" class="border p-2 rounded bg-white font-bold">
-                        <option value="BUY" class="text-blue-600">BELI (+)</option>
-                        <option value="SELL" class="text-red-600">JUAL (-)</option>
-                    </select>
-                    <input id="price" type="number" placeholder="Harga" class="border p-2 rounded">
-                    <input id="lots" type="number" placeholder="Lot" class="border p-2 rounded">
-                    <button onclick="processTrade()" class="bg-blue-600 text-white font-bold py-2 rounded hover:bg-blue-700 transition shadow-lg shadow-blue-200">Eksekusi</button>
-                </div>
-                <div class="mt-4 pt-4 border-t border-slate-50 flex flex-wrap gap-6 items-center justify-between">
-                    <div class="flex items-center gap-4">
-                        <select id="category" class="border p-2 rounded text-xs bg-slate-50">
-                            <option value="Dividen">Dividen (Core)</option>
-                            <option value="Trading">Trading (Swing)</option>
+            <div class="card-cartoon p-6 mb-8">
+                <div class="grid grid-cols-2 md:grid-cols-6 gap-4 text-black">
+                    <div class="col-span-2 md:col-span-1">
+                        <label class="text-[10px] font-black uppercase ml-2">Ticker</label>
+                        <input id="ticker" type="text" placeholder="GOTO" class="w-full p-3 font-bold uppercase focus:ring-4 ring-green-400 outline-none">
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-black uppercase ml-2">Action</label>
+                        <select id="tradeType" class="w-full p-3 font-bold bg-yellow-300">
+                            <option value="BUY">BUY (+)</option>
+                            <option value="SELL">SELL (-)</option>
                         </select>
-                        <div class="flex items-center gap-2">
-                            <span class="text-xs font-bold text-slate-400">MODAL:</span>
-                            <input id="initialInvestment" type="number" onchange="saveInitial()" placeholder="Rp" class="border-b-2 border-slate-200 focus:border-blue-500 outline-none p-1 w-40 font-bold text-slate-700">
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-black uppercase ml-2">Price</label>
+                        <input id="price" type="number" placeholder="Price" class="w-full p-3 font-bold outline-none">
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-black uppercase ml-2">Lot</label>
+                        <input id="lots" type="number" placeholder="Lot" class="w-full p-3 font-bold outline-none">
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-black uppercase ml-2">Date</label>
+                        <input id="date" type="date" class="w-full p-3 font-bold text-xs outline-none">
+                    </div>
+                    <button onclick="processTrade()" class="btn-launch moon-font text-xl mt-4">LAUNCH!</button>
+                </div>
+                
+                <!-- FUEL STASH WITH REFRESH BUTTON -->
+                <div class="mt-6 flex flex-wrap justify-between items-center border-t-4 border-black pt-6 text-black gap-4">
+                    <div class="flex flex-col sm:flex-row sm:items-center gap-2">
+                        <span class="moon-font text-orange-600">FUEL STASH:</span>
+                        <div class="flex border-4 border-black rounded-xl overflow-hidden shadow-[4px_4px_0px_#000]">
+                            <input id="initialInvestment" type="number" class="bg-blue-50 p-2 w-32 font-black text-blue-600 outline-none" placeholder="Modal">
+                            <button onclick="saveInitial(event)" class="bg-yellow-400 px-4 py-2 font-black hover:bg-yellow-300 border-l-4 border-black active:bg-yellow-500 transition-colors">
+                                SET & RELOAD 🔄
+                            </button>
                         </div>
                     </div>
-                    <button onclick="updateAllPrices()" id="btnRefresh" class="bg-emerald-500 text-white px-4 py-1 rounded-full text-xs font-bold hover:bg-emerald-600 transition">🔄 Refresh Harga Google</button>
+                    <button onclick="updateAllPrices()" id="btnRefresh" class="bg-green-400 px-6 py-2 rounded-full border-4 border-black font-black hover:bg-green-300 active:translate-y-1 shadow-[4px_4px_0px_#000]">
+                        SYNC MARKET PRICES
+                    </button>
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                <div class="bg-white p-5 rounded-xl shadow-sm border-l-4 border-blue-500">
-                    <p class="text-slate-400 text-[10px] font-bold uppercase tracking-widest">Market Value</p>
-                    <h3 id="totalMarketValue" class="text-2xl font-bold text-slate-800">Rp 0</h3>
+            <!-- DASHBOARD -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 text-black">
+                <div class="card-cartoon p-5 bg-blue-400 border-none">
+                    <p class="text-black/60 text-[10px] font-black uppercase italic">Market Value</p>
+                    <h3 id="totalMarketValue" class="text-3xl moon-font text-white">Rp 0</h3>
                 </div>
-                <div class="bg-white p-5 rounded-xl shadow-sm border-l-4 border-emerald-500">
-                    <p class="text-slate-400 text-[10px] font-bold uppercase tracking-widest">Unrealized PNL</p>
-                    <h3 id="totalPL" class="text-2xl font-bold">Rp 0 (0%)</h3>
+                <div class="card-cartoon p-5 bg-white">
+                    <p class="text-black/60 text-[10px] font-black uppercase italic">Unrealized P/L</p>
+                    <h3 id="totalPL" class="text-3xl moon-font">Rp 0 (0%)</h3>
                 </div>
-                <div class="bg-white p-5 rounded-xl shadow-sm border-l-4 border-purple-500">
-                    <p class="text-slate-400 text-[10px] font-bold uppercase tracking-widest">Sisa Kas</p>
-                    <h3 id="cashRemaining" class="text-2xl font-bold text-slate-800">Rp 0</h3>
+                <div class="card-cartoon p-5 bg-yellow-400">
+                    <p class="text-black/60 text-[10px] font-black uppercase italic">Cash Remaining</p>
+                    <h3 id="cashRemaining" class="text-3xl moon-font text-black">Rp 0</h3>
                 </div>
             </div>
 
-            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+            <!-- PIE CHART SECTION -->
+            <div class="card-cartoon p-6 mb-8 flex flex-col md:flex-row items-center justify-around gap-6">
+                <div class="relative w-48 h-48 md:w-64 md:h-64 flex items-center justify-center">
+                    <svg id="moonPieChart" viewBox="-1 -1 2 2" class="w-full h-full -rotate-90 filter drop-shadow-lg"></svg>
+                </div>
+                <div id="chartLegend" class="flex flex-wrap gap-4 justify-center md:justify-start max-w-md"></div>
+            </div>
+
+            <!-- TABLE -->
+            <div class="card-cartoon overflow-hidden">
                 <table class="w-full text-left">
-                    <thead class="bg-slate-50 text-[10px] font-bold uppercase text-slate-500 border-b">
+                    <thead class="bg-black text-white text-[12px] moon-font">
                         <tr>
-                            <th class="p-4">Emiten</th>
-                            <th class="p-4">Strategi</th>
-                            <th class="p-4 text-center">Porsi</th>
-                            <th class="p-4">Avg Price</th>
-                            <th class="p-4">Last Price</th>
-                            <th class="p-4">Lot</th>
-                            <th class="p-4">PNL %</th>
-                            <th class="p-4 text-center">Aksi</th>
+                            <th class="p-4">TICKER</th>
+                            <th class="p-4">AVG PRICE</th>
+                            <th class="p-4">LAST PRICE</th>
+                            <th class="p-4">LOT</th>
+                            <th class="p-4">GAIN/LOSS</th>
+                            <th class="p-4">DEL</th>
                         </tr>
                     </thead>
-                    <tbody id="stockBody" class="text-sm"></tbody>
+                    <tbody id="stockBody" class="font-bold"></tbody>
                 </table>
-            </div>
-            
-            <div id="adviceBox" class="mt-6 p-4 bg-amber-50 rounded-lg border border-amber-100 hidden">
-                <h4 class="text-amber-800 font-bold text-sm mb-2">💡 Saran Rebalancing:</h4>
-                <ul id="rebalanceAdvice" class="text-xs text-amber-700 space-y-1 list-disc ml-5"></ul>
             </div>
         </div>
 
-        <!-- SECTION LOGS -->
+        <!-- SECTION: CALCULATOR -->
+        <div id="section-calculator" class="hidden">
+            <div class="card-cartoon p-8 bg-white relative overflow-hidden text-black">
+                <h2 class="text-4xl moon-font mb-8 text-orange-500">🚀 MOON CALCULATOR</h2>
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    <div>
+                        <label class="block text-xs font-black mb-1 uppercase">Buy Price</label>
+                        <input id="calcBuyPrice" type="number" class="w-full p-4 bg-blue-50 font-black text-blue-600" placeholder="0">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-black mb-1 uppercase">Sell Price</label>
+                        <input id="calcSellPrice" type="number" class="w-full p-4 bg-orange-50 font-black text-orange-600" placeholder="0">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-black mb-1 uppercase">Lot</label>
+                        <input id="calcLots" type="number" class="w-full p-4 bg-yellow-50 font-black" placeholder="0">
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="block text-[8px] font-black mb-1 uppercase">Fee Buy %</label>
+                            <input id="calcBuyFee" type="number" step="0.01" value="0.15" class="w-full p-4 text-center">
+                        </div>
+                        <div>
+                            <label class="block text-[8px] font-black mb-1 uppercase">Fee Sell %</label>
+                            <input id="calcSellFee" type="number" step="0.01" value="0.25" class="w-full p-4 text-center">
+                        </div>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8 bg-black p-6 rounded-3xl text-white">
+                    <div class="text-center"><p class="text-white/50 text-[10px] font-black uppercase">Capital</p><p id="resTotalBuy" class="text-xl font-black">Rp 0</p></div>
+                    <div class="text-center border-x border-white/20"><p class="text-white/50 text-[10px] font-black uppercase">Revenue</p><p id="resTotalSell" class="text-xl font-black">Rp 0</p></div>
+                    <div class="text-center"><p class="text-white/50 text-[10px] font-black uppercase">Net Profit</p><p id="resNetPNL" class="text-3xl moon-font text-green-400">Rp 0</p></div>
+                </div>
+                <div class="flex gap-4 mt-8">
+                    <button onclick="calculateDamage()" class="flex-1 bg-green-500 p-5 rounded-2xl border-4 border-black moon-font text-2xl">CALCULATE!</button>
+                    <button onclick="resetCalculator()" class="bg-white p-5 rounded-2xl border-4 border-black font-black uppercase px-10">Reset</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECTION: LOGS -->
         <div id="section-logs" class="hidden">
-            <div class="bg-white rounded-xl shadow-sm border overflow-hidden">
+            <div class="card-cartoon overflow-hidden bg-white text-black">
                 <table class="w-full text-left">
-                    <thead class="bg-slate-50 text-[10px] font-bold uppercase border-b">
+                    <thead class="bg-orange-500 text-white moon-font text-xs">
                         <tr>
-                            <th class="p-4">Tanggal</th>
-                            <th class="p-4">Emiten</th>
-                            <th class="p-4">Aksi</th>
-                            <th class="p-4">Harga</th>
-                            <th class="p-4">Lot</th>
-                            <th class="p-4">Total Value</th>
+                            <th class="p-4">DATE</th>
+                            <th class="p-4">TICKER</th>
+                            <th class="p-4">TYPE</th>
+                            <th class="p-4">PRICE</th>
+                            <th class="p-4">TOTAL</th>
                         </tr>
                     </thead>
-                    <tbody id="logBody" class="text-sm"></tbody>
+                    <tbody id="logBody" class="font-bold"></tbody>
                 </table>
             </div>
         </div>
 
-        <!-- SECTION PERFORMANCE -->
-        <div id="section-performance" class="hidden">
-            <div class="bg-white rounded-xl shadow-sm border overflow-hidden">
-                <table class="w-full text-left text-sm">
-                    <thead class="bg-emerald-50 text-[10px] font-bold uppercase border-b">
-                        <tr>
-                            <th class="p-4">Tanggal Jual</th>
-                            <th class="p-4">Emiten</th>
-                            <th class="p-4 text-center">Lot</th>
-                            <th class="p-4">Avg Beli</th>
-                            <th class="p-4">Harga Jual</th>
-                            <th class="p-4 text-right">Realized PNL</th>
-                        </tr>
-                    </thead>
-                    <tbody id="performanceBody"></tbody>
-                </table>
-            </div>
-        </div>
     </div>
 
     <script>
-        // CONFIG
-        const GOOGLE_SHEETS_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSLMXaTt1rg99ycwKFPmPztOGjK55AV7OcjFBf4PVAObwcPX20m2laX7ngnvyEPR2qsOyuEiFrcbFw-/pub?gid=0&single=true&output=csv';
+        const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSLMXaTt1rg99ycwKFPmPztOGjK55AV7OcjFBf4PVAObwcPX20m2laX7ngnvyEPR2qsOyuEiFrcbFw-/pub?gid=0&single=true&output=csv';
+        const CHART_COLORS = ['#9dff00', '#ff5f1f', '#00d4ff', '#ffeb3b', '#e91e63', '#8e44ad', '#1de9b6'];
 
-        let portfolio = JSON.parse(localStorage.getItem('ihsg_v4_portfolio')) || [];
-        let tradeLogs = JSON.parse(localStorage.getItem('ihsg_v4_logs')) || [];
-        let realizedPNL = JSON.parse(localStorage.getItem('ihsg_v4_pnl')) || [];
+        let portfolio = JSON.parse(localStorage.getItem('moon_porto')) || [];
+        let tradeLogs = JSON.parse(localStorage.getItem('moon_logs')) || [];
         let livePrices = {};
 
-        // 1. DATA PERSISTENCE (EXPORT/IMPORT)
-        function exportData() {
-            const data = {
-                portfolio, tradeLogs, realizedPNL,
-                initial: localStorage.getItem('ihsg_v4_initial')
-            };
-            const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
-            const a = document.createElement('a');
-            a.href = URL.createObjectURL(blob);
-            a.download = `Portfolio_Backup_${new Date().toISOString().split('T')[0]}.json`;
-            a.click();
+        function save() {
+            localStorage.setItem('moon_porto', JSON.stringify(portfolio));
+            localStorage.setItem('moon_logs', JSON.stringify(tradeLogs));
         }
 
-        function importData(event) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    const data = JSON.parse(e.target.result);
-                    portfolio = data.portfolio || [];
-                    tradeLogs = data.tradeLogs || [];
-                    realizedPNL = data.realizedPNL || [];
-                    localStorage.setItem('ihsg_v4_initial', data.initial || 0);
-                    saveAll();
-                    renderAll();
-                    alert("Data berhasil dimuat!");
-                } catch (err) { alert("File tidak valid."); }
-            };
-            reader.readAsText(event.target.files[0]);
+        function switchTab(tab) {
+            ['portfolio', 'calculator', 'logs'].forEach(t => {
+                document.getElementById('section-' + t).classList.add('hidden');
+                document.getElementById('tab-' + t).classList.remove('tab-active');
+            });
+            document.getElementById('section-' + tab).classList.remove('hidden');
+            document.getElementById('tab-' + tab).classList.add('tab-active');
         }
 
-        // 2. CORE LOGIC
         function processTrade() {
-            const date = document.getElementById('date').value || new Date().toISOString().split('T')[0];
             const ticker = document.getElementById('ticker').value.toUpperCase().trim();
             const type = document.getElementById('tradeType').value;
             const price = parseFloat(document.getElementById('price').value);
             const lots = parseInt(document.getElementById('lots').value);
-            const category = document.getElementById('category').value;
+            const date = document.getElementById('date').value || new Date().toISOString().split('T')[0];
 
-            if(!ticker || isNaN(price) || isNaN(lots)) return alert("Isi data dengan benar.");
+            if(!ticker || !price || !lots) return alert("Oops! Fill the data first!");
 
             tradeLogs.push({ date, ticker, type, price, lots, total: price * lots * 100 });
-
             const idx = portfolio.findIndex(s => s.ticker === ticker);
 
             if (type === 'BUY') {
@@ -199,126 +293,184 @@
                     portfolio[idx].lots += lots;
                     portfolio[idx].buyPrice = Math.round(newAvg);
                 } else {
-                    portfolio.push({ ticker, buyPrice: price, lots, category, currentPrice: livePrices[ticker] || price });
+                    portfolio.push({ ticker, buyPrice: price, lots, currentPrice: livePrices[ticker] || price });
                 }
             } else {
                 if (idx > -1) {
-                    const p = portfolio[idx];
-                    if (lots > p.lots) return alert("Lot tidak cukup.");
-                    
-                    const pnl = (price - p.buyPrice) * lots * 100;
-                    realizedPNL.push({ date, ticker, avgAtBuy: p.buyPrice, sellPrice: price, lots, pnl });
-
-                    if (lots === p.lots) portfolio.splice(idx, 1);
+                    if (lots > portfolio[idx].lots) return alert("Not enough lots!");
+                    if (lots === portfolio[idx].lots) portfolio.splice(idx, 1);
                     else portfolio[idx].lots -= lots;
-                } else return alert("Emiten tidak ada.");
+                } else return alert("You don't own this stock!");
             }
-            saveAll();
-            renderAll();
-            document.getElementById('ticker').value = '';
-            document.getElementById('price').value = '';
-            document.getElementById('lots').value = '';
+            save(); render();
         }
 
-        // 3. UI SYNC
         async function updateAllPrices() {
             const btn = document.getElementById('btnRefresh');
-            btn.disabled = true;
-            btn.innerText = "Syncing...";
+            btn.innerText = "SYNCING...";
             try {
-                const res = await fetch(GOOGLE_SHEETS_CSV_URL);
-                const text = await res.text();
-                text.split('\n').forEach(row => {
+                const res = await fetch(CSV_URL);
+                const data = await res.text();
+                data.split('\n').forEach(row => {
                     const [t, p] = row.split(',');
-                    const cleanT = t?.replace(/"/g, "").trim().toUpperCase();
-                    if(cleanT) livePrices[cleanT] = parseFloat(p);
+                    if(t) livePrices[t.trim().toUpperCase()] = parseFloat(p);
                 });
                 portfolio = portfolio.map(s => ({...s, currentPrice: livePrices[s.ticker] || s.currentPrice}));
-                saveAll();
-                renderAll();
-            } catch (e) { alert("Gagal ambil harga."); }
-            btn.disabled = false;
-            btn.innerText = "🔄 Refresh Harga Google";
+                save(); render();
+            } catch (e) { console.log("Fetch error:", e); }
+            btn.innerText = "SYNC MARKET PRICES";
         }
 
-        function switchTab(tab) {
-            ['portfolio', 'logs', 'performance'].forEach(t => {
-                document.getElementById('section-' + t).classList.add('hidden');
-                document.getElementById('tab-' + t).className = 'py-2 px-4 font-bold text-slate-400';
+        function getCoordinatesForPercent(percent) {
+            const x = Math.cos(2 * Math.PI * percent);
+            const y = Math.sin(2 * Math.PI * percent);
+            return [x, y];
+        }
+
+        function drawMoonChart(marketVal) {
+            const svg = document.getElementById('moonPieChart');
+            const legend = document.getElementById('chartLegend');
+            svg.innerHTML = ''; legend.innerHTML = '';
+
+            if (portfolio.length === 0 || marketVal === 0) {
+                svg.innerHTML = '<circle cx="0" cy="0" r="1" fill="#eee" stroke="black" stroke-width="0.05"/>';
+                legend.innerHTML = '<p class="text-xs italic opacity-50">Rocket is empty...</p>';
+                return;
+            }
+
+            let cumulativePercent = 0;
+            portfolio.forEach((stock, index) => {
+                const stockVal = stock.lots * 100 * (stock.currentPrice || stock.buyPrice);
+                const percent = stockVal / marketVal;
+                const [startX, startY] = getCoordinatesForPercent(cumulativePercent);
+                cumulativePercent += percent;
+                const [endX, endY] = getCoordinatesForPercent(cumulativePercent);
+                const largeArcFlag = percent > 0.5 ? 1 : 0;
+                const pathData = `M ${startX} ${startY} A 1 1 0 ${largeArcFlag} 1 ${endX} ${endY} L 0 0`;
+                
+                const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                path.setAttribute('d', pathData);
+                path.setAttribute('fill', CHART_COLORS[index % CHART_COLORS.length]);
+                path.setAttribute('stroke', 'black');
+                path.setAttribute('stroke-width', '0.02');
+                path.setAttribute('class', 'moon-slice');
+                svg.appendChild(path);
+
+                const legendItem = document.createElement('div');
+                legendItem.className = 'flex items-center gap-2 bg-slate-100 px-3 py-1 rounded-full border-2 border-black';
+                legendItem.innerHTML = `<div class="w-3 h-3 rounded-full" style="background:${CHART_COLORS[index % CHART_COLORS.length]}"></div><span class="text-[10px] font-black">${stock.ticker} (${(percent * 100).toFixed(1)}%)</span>`;
+                legend.appendChild(legendItem);
             });
-            document.getElementById('section-' + tab).classList.remove('hidden');
-            document.getElementById('tab-' + tab).className = 'py-2 px-4 font-bold border-b-2 border-blue-600 text-blue-600';
+
+            [[0.3, 0.4, 0.1], [-0.4, -0.2, 0.15], [0.1, -0.5, 0.08]].forEach(pos => {
+                const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                c.setAttribute('cx', pos[0]); c.setAttribute('cy', pos[1]); c.setAttribute('r', pos[2]);
+                c.setAttribute('class', 'crater'); svg.appendChild(c);
+            });
         }
 
-        function renderAll() {
-            renderPortfolio();
+        function saveInitial(event) {
+            const val = document.getElementById('initialInvestment').value;
+            if (val === "" || val < 0) return alert("Masukkan modal yang valid!");
             
-            document.getElementById('logBody').innerHTML = tradeLogs.slice().reverse().map(l => `
-                <tr class="border-b">
-                    <td class="p-4 font-mono text-xs">${l.date}</td>
-                    <td class="p-4 font-bold">${l.ticker}</td>
-                    <td class="p-4 font-bold ${l.type === 'BUY' ? 'text-blue-500' : 'text-red-500'}">${l.type}</td>
-                    <td class="p-4">${l.price.toLocaleString()}</td>
-                    <td class="p-4">${l.lots}</td>
-                    <td class="p-4 font-medium">Rp ${(l.total).toLocaleString()}</td>
-                </tr>`).join('');
-
-            document.getElementById('performanceBody').innerHTML = realizedPNL.slice().reverse().map(p => `
-                <tr class="border-b">
-                    <td class="p-4 font-mono text-xs text-slate-400">${p.date}</td>
-                    <td class="p-4 font-bold">${p.ticker}</td>
-                    <td class="p-4 text-center">${p.lots}</td>
-                    <td class="p-4">${p.avgAtBuy.toLocaleString()}</td>
-                    <td class="p-4">${p.sellPrice.toLocaleString()}</td>
-                    <td class="p-4 text-right font-bold ${p.pnl >= 0 ? 'text-emerald-600' : 'text-red-600'}">Rp ${p.pnl.toLocaleString()}</td>
-                </tr>`).join('');
+            localStorage.setItem('moon_initial', val);
+            
+            // Visual Feedback
+            const btn = event.currentTarget;
+            const originalText = btn.innerHTML;
+            btn.innerText = "SAVED! 🚀";
+            btn.classList.replace('bg-yellow-400', 'bg-green-400');
+            
+            setTimeout(() => {
+                btn.innerHTML = originalText;
+                btn.classList.replace('bg-green-400', 'bg-yellow-400');
+                render();
+            }, 600);
         }
 
-        function renderPortfolio() {
-            const initial = parseFloat(localStorage.getItem('ihsg_v4_initial')) || 0;
+        function render() {
+            const initial = parseFloat(localStorage.getItem('moon_initial')) || 0;
             document.getElementById('initialInvestment').value = initial;
             
-            let marketVal = 0;
-            let costVal = 0;
+            let marketVal = 0, costVal = 0;
             portfolio.forEach(s => {
-                marketVal += (s.lots * 100 * s.currentPrice);
+                marketVal += (s.lots * 100 * (s.currentPrice || s.buyPrice));
                 costVal += (s.lots * 100 * s.buyPrice);
             });
 
             document.getElementById('stockBody').innerHTML = portfolio.map(s => {
-                const w = marketVal > 0 ? ((s.lots * 100 * s.currentPrice) / marketVal * 100).toFixed(1) : 0;
-                const pl = ((s.currentPrice - s.buyPrice) / s.buyPrice * 100).toFixed(2);
-                return `
-                    <tr class="border-b">
-                        <td class="p-4 font-bold text-blue-900">${s.ticker}</td>
-                        <td class="p-4 text-[10px] font-bold uppercase ${s.category === 'Dividen' ? 'text-blue-500' : 'text-orange-500'}">${s.category}</td>
-                        <td class="p-4 text-center font-mono text-xs">${w}%</td>
-                        <td class="p-4">Rp ${s.buyPrice.toLocaleString()}</td>
-                        <td class="p-4 font-bold">Rp ${s.currentPrice.toLocaleString()}</td>
-                        <td class="p-4 font-medium">${s.lots}</td>
-                        <td class="p-4 font-bold ${pl >= 0 ? 'text-emerald-500' : 'text-red-500'}">${pl}%</td>
-                        <td class="p-4 text-center"><button onclick="deleteRow('${s.ticker}')" class="text-slate-300 hover:text-red-500">✕</button></td>
-                    </tr>`;
+                const pl = (((s.currentPrice || s.buyPrice) - s.buyPrice) / s.buyPrice * 100).toFixed(2);
+                return `<tr class="border-b-2 border-slate-100 hover:bg-slate-50 transition">
+                    <td class="p-4 text-blue-600 font-black">${s.ticker}</td>
+                    <td class="p-4">Rp ${s.buyPrice.toLocaleString()}</td>
+                    <td class="p-4">Rp ${(s.currentPrice || s.buyPrice).toLocaleString()}</td>
+                    <td class="p-4">${s.lots}</td>
+                    <td class="p-4 font-black ${pl >= 0 ? 'text-green-500' : 'text-red-500'}">${pl}%</td>
+                    <td class="p-4"><button onclick="delStock('${s.ticker}')" class="bg-red-100 text-red-500 p-2 rounded-lg">✕</button></td>
+                </tr>`;
             }).join('');
 
-            const plVal = marketVal - costVal;
-            const plPct = costVal > 0 ? (plVal / costVal * 100).toFixed(2) : 0;
-            
+            const totalPL = marketVal - costVal;
+            const plPct = costVal > 0 ? (totalPL / costVal * 100).toFixed(2) : 0;
             document.getElementById('totalMarketValue').innerText = `Rp ${marketVal.toLocaleString()}`;
-            document.getElementById('totalPL').innerText = `Rp ${plVal.toLocaleString()} (${plPct}%)`;
-            document.getElementById('totalPL').className = `text-2xl font-bold ${plVal >= 0 ? 'text-emerald-600' : 'text-red-600'}`;
+            document.getElementById('totalPL').innerText = `Rp ${totalPL.toLocaleString()} (${plPct}%)`;
+            document.getElementById('totalPL').className = `text-3xl moon-font ${totalPL >= 0 ? 'text-green-500' : 'text-red-500'}`;
             document.getElementById('cashRemaining').innerText = `Rp ${(initial - costVal).toLocaleString()}`;
+
+            document.getElementById('logBody').innerHTML = tradeLogs.slice().reverse().map(l => `
+                <tr class="border-b">
+                    <td class="p-4 text-slate-400 font-normal">${l.date}</td>
+                    <td class="p-4 text-purple-600">${l.ticker}</td>
+                    <td class="p-4"><span class="${l.type === 'BUY' ? 'bg-blue-500' : 'bg-red-500'} text-white px-2 py-1 rounded text-[10px]">${l.type}</span></td>
+                    <td class="p-4">Rp ${l.price.toLocaleString()}</td>
+                    <td class="p-4">Rp ${l.total.toLocaleString()}</td>
+                </tr>`).join('');
+
+            drawMoonChart(marketVal);
         }
 
-        function deleteRow(ticker) { if(confirm("Hapus emiten?")) { portfolio = portfolio.filter(s => s.ticker !== ticker); saveAll(); renderAll(); } }
-        function saveInitial() { localStorage.setItem('ihsg_v4_initial', document.getElementById('initialInvestment').value); renderPortfolio(); }
-        function saveAll() {
-            localStorage.setItem('ihsg_v4_portfolio', JSON.stringify(portfolio));
-            localStorage.setItem('ihsg_v4_logs', JSON.stringify(tradeLogs));
-            localStorage.setItem('ihsg_v4_pnl', JSON.stringify(realizedPNL));
+        function calculateDamage() {
+            const bPrice = parseFloat(document.getElementById('calcBuyPrice').value) || 0;
+            const sPrice = parseFloat(document.getElementById('calcSellPrice').value) || 0;
+            const lots = parseInt(document.getElementById('calcLots').value) || 0;
+            const bFee = parseFloat(document.getElementById('calcBuyFee').value) || 0.15;
+            const sFee = parseFloat(document.getElementById('calcSellFee').value) || 0.25;
+            const buyTotal = (bPrice * lots * 100) * (1 + bFee/100);
+            const sellTotal = (sPrice * lots * 100) * (1 - sFee/100);
+            const net = sellTotal - buyTotal;
+            const pct = buyTotal > 0 ? (net / buyTotal * 100).toFixed(2) : 0;
+            document.getElementById('resTotalBuy').innerText = `Rp ${Math.round(buyTotal).toLocaleString()}`;
+            document.getElementById('resTotalSell').innerText = `Rp ${Math.round(sellTotal).toLocaleString()}`;
+            document.getElementById('resNetPNL').innerText = `Rp ${Math.round(net).toLocaleString()} (${pct}%)`;
+            document.getElementById('resNetPNL').className = `text-3xl moon-font ${net >= 0 ? 'text-green-400' : 'text-red-500'}`;
         }
 
-        window.onload = () => { renderAll(); updateAllPrices(); };
+        function resetCalculator() {
+            ['calcBuyPrice', 'calcSellPrice', 'calcLots'].forEach(id => document.getElementById(id).value = '');
+            document.getElementById('resNetPNL').innerText = 'Rp 0';
+        }
+
+        function delStock(t) { if(confirm("Hapus saham ini?")) { portfolio = portfolio.filter(s => s.ticker !== t); save(); render(); } }
+        
+        function exportData() {
+            const data = { portfolio, tradeLogs, initial: localStorage.getItem('moon_initial') };
+            const blob = new Blob([JSON.stringify(data)], {type: 'application/json'});
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob); a.download = `MOON_PORTO_BACKUP.json`; a.click();
+        }
+
+        function importData(e) {
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                const data = JSON.parse(event.target.result);
+                portfolio = data.portfolio || []; tradeLogs = data.tradeLogs || [];
+                localStorage.setItem('moon_initial', data.initial || 0);
+                save(); render(); alert("Restore Sukses!");
+            };
+            reader.readAsText(e.target.files[0]);
+        }
+
+        window.onload = () => { render(); updateAllPrices(); };
     </script>
 </body>
 </html>
