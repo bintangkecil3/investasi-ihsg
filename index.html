@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Porto to the Moon - Smart Ticker Edition</title>
+    <title>Porto to the Moon - Strict Airdrop</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Bungee&family=Fredoka+One&display=swap');
@@ -11,36 +11,28 @@
         body { font-family: 'Fredoka One', cursive; background-color: var(--space-purple); background-image: radial-gradient(var(--space-purple) 20%, #732d91 100%); color: white; min-height: 100vh; }
         .moon-font { font-family: 'Bungee', cursive; }
         .card-cartoon { background: white; border: 4px solid #000; box-shadow: 8px 8px 0px #000; color: #000; border-radius: 20px; }
-        input, select { border: 3px solid #000 !important; border-radius: 12px !important; color: #000; }
+        input, select { border: 3px solid #000 !important; border-radius: 12px !important; color: #000; transition: all 0.2s; }
         .tab-active { background-color: var(--slime-green) !important; color: black !important; transform: translateY(-5px); box-shadow: 0px 5px 0px #000; }
-        .btn-launch { background-color: var(--moon-orange); color: white; border: 3px solid #000; box-shadow: 4px 4px 0px #000; transition: all 0.1s; }
-        .btn-launch:active { transform: translate(2px, 2px); box-shadow: 0px 0px 0px #000; }
-        .btn-utility { background: #000; color: #fff; font-size: 10px; padding: 6px 12px; border-radius: 99px; text-transform: uppercase; font-weight: 900; }
+        .btn-launch { background-color: var(--moon-orange); color: white; border: 3px solid #000; box-shadow: 4px 4px 0px #000; transition: all 0.1s; cursor: pointer; }
+        .btn-launch:active:not(:disabled) { transform: translate(2px, 2px); box-shadow: 0px 0px 0px #000; }
+        .btn-launch:disabled { background-color: #94a3b8; cursor: not-allowed; box-shadow: 2px 2px 0px #000; opacity: 0.6; }
+        .invalid-ticker { border-color: #ef4444 !important; background-color: #fee2e2 !important; }
         .hidden { display: none; }
-        /* Styling untuk datalist agar lebih rapi di beberapa browser */
-        datalist { font-family: 'Fredoka One', sans-serif; }
     </style>
 </head>
 <body class="p-4 md:p-8">
-    <!-- List Ticker Otomatis (Hidden) -->
+    <!-- List Ticker untuk Auto-Suggest -->
     <datalist id="tickerList"></datalist>
 
     <div class="max-w-6xl mx-auto">
-        <div class="flex justify-end gap-3 mb-4">
-            <button onclick="exportData()" class="btn-utility">Back Up Data</button>
-            <button onclick="document.getElementById('importFile').click()" class="btn-utility">Restore Data</button>
-            <input type="file" id="importFile" class="hidden" onchange="importData(event)">
-        </div>
-
         <header class="flex flex-col items-center mb-10 text-center">
             <h1 class="text-5xl md:text-7xl moon-font text-white drop-shadow-[6px_6px_0px_rgba(0,0,0,1)] italic">PORTO <span class="text-[var(--slime-green)]">TO THE MOON</span></h1>
         </header>
 
         <nav class="flex flex-wrap gap-2 mb-8">
-            <button onclick="switchTab('portfolio')" id="tab-portfolio" class="tab-active flex-1 min-w-[120px] py-4 rounded-2xl border-4 border-black bg-white text-black font-black uppercase">My Rocket</button>
-            <button onclick="switchTab('airdrop')" id="tab-airdrop" class="flex-1 min-w-[120px] py-4 rounded-2xl border-4 border-black bg-white text-black font-black uppercase">Airdrop & Realized</button>
-            <button onclick="switchTab('calculator')" id="tab-calculator" class="flex-1 min-w-[120px] py-4 rounded-2xl border-4 border-black bg-white text-black font-black uppercase">Profit Calc</button>
-            <button onclick="switchTab('logs')" id="tab-logs" class="flex-1 min-w-[120px] py-4 rounded-2xl border-4 border-black bg-white text-black font-black uppercase">Flight Log</button>
+            <button onclick="switchTab('portfolio')" id="tab-portfolio" class="tab-active flex-1 min-w-[120px] py-4 rounded-2xl border-4 border-black bg-white text-black font-black uppercase italic">My Rocket</button>
+            <button onclick="switchTab('airdrop')" id="tab-airdrop" class="flex-1 min-w-[120px] py-4 rounded-2xl border-4 border-black bg-white text-black font-black uppercase italic">Airdrop</button>
+            <button onclick="switchTab('calculator')" id="tab-calculator" class="flex-1 min-w-[120px] py-4 rounded-2xl border-4 border-black bg-white text-black font-black uppercase italic">Calc</button>
         </nav>
 
         <!-- SECTION: MY ROCKET -->
@@ -49,82 +41,69 @@
                 <div class="grid grid-cols-2 md:grid-cols-6 gap-4">
                     <div class="col-span-2 md:col-span-1">
                         <label class="text-[10px] font-black uppercase ml-2">Ticker</label>
-                        <!-- Ditambahkan list="tickerList" -->
-                        <input id="ticker" type="text" list="tickerList" placeholder="GOTO" class="w-full p-3 font-bold uppercase outline-none">
+                        <input id="ticker" type="text" list="tickerList" oninput="validateInput('ticker', 'btnLaunch')" placeholder="Cari.." class="w-full p-3 font-bold uppercase outline-none">
                     </div>
                     <div>
-                        <label class="text-[10px] font-black uppercase ml-2">Action</label>
+                        <label class="text-[10px] font-black uppercase ml-2 text-slate-400">Action</label>
                         <select id="tradeType" class="w-full p-3 font-bold bg-yellow-300">
                             <option value="BUY">BUY (+)</option>
                             <option value="SELL">SELL (-)</option>
                         </select>
                     </div>
-                    <div><label class="text-[10px] font-black uppercase ml-2">Price</label><input id="price" type="number" class="w-full p-3 font-bold"></div>
-                    <div><label class="text-[10px] font-black uppercase ml-2">Lot</label><input id="lots" type="number" class="w-full p-3 font-bold"></div>
-                    <div><label class="text-[10px] font-black uppercase ml-2">Date</label><input id="date" type="date" class="w-full p-3 font-bold text-xs"></div>
-                    <button onclick="processTrade()" class="btn-launch moon-font text-xl mt-4">LAUNCH!</button>
+                    <div><label class="text-[10px] font-black uppercase ml-2 text-slate-400">Price</label><input id="price" type="number" class="w-full p-3 font-bold"></div>
+                    <div><label class="text-[10px] font-black uppercase ml-2 text-slate-400">Lot</label><input id="lots" type="number" class="w-full p-3 font-bold"></div>
+                    <div><label class="text-[10px] font-black uppercase ml-2 text-slate-400">Date</label><input id="date" type="date" class="w-full p-3 font-bold text-xs"></div>
+                    <button id="btnLaunch" onclick="processTrade()" class="btn-launch moon-font text-xl mt-4">LAUNCH!</button>
                 </div>
-                
-                <div class="mt-6 flex flex-wrap justify-between items-center border-t-4 border-black pt-6 gap-4">
+                <div class="mt-6 flex justify-between items-center border-t-2 border-dashed border-black pt-4">
+                    <button onclick="updateAllPrices()" id="btnRefresh" class="bg-green-400 px-6 py-2 rounded-full border-4 border-black font-black shadow-[4px_4px_0px_#000] text-xs">SYNC PRICES 🔄</button>
                     <div class="flex items-center gap-2">
-                        <span class="moon-font text-orange-600">FUEL STASH:</span>
-                        <div class="flex border-4 border-black rounded-xl overflow-hidden">
-                            <input id="initialInvestment" type="number" class="bg-blue-50 p-2 w-32 font-black text-blue-600 outline-none">
-                            <button onclick="saveInitial(event)" class="bg-yellow-400 px-4 py-2 font-black border-l-4 border-black">SET & RELOAD 🔄</button>
-                        </div>
+                         <input id="initialInvestment" type="number" class="border-2 border-black p-1 w-24 rounded font-bold text-sm">
+                         <button onclick="saveInitial()" class="bg-black text-white text-[10px] px-3 py-2 rounded-lg font-black italic">SET FUEL</button>
                     </div>
-                    <button onclick="updateAllPrices()" id="btnRefresh" class="bg-green-400 px-6 py-2 rounded-full border-4 border-black font-black shadow-[4px_4px_0px_#000]">SYNC MARKET PRICES</button>
                 </div>
             </div>
 
-            <!-- Dashboard Stats -->
+            <!-- Stats -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 text-black">
-                <div class="card-cartoon p-5 bg-blue-400 border-none">
-                    <p class="text-white/70 text-[10px] font-black uppercase italic">Market Value</p>
-                    <h3 id="totalMarketValue" class="text-3xl moon-font text-white">Rp 0</h3>
-                </div>
-                <div class="card-cartoon p-5 bg-white">
-                    <p class="text-black/60 text-[10px] font-black uppercase italic">Total P/L (Floating + Realized)</p>
-                    <h3 id="totalPL" class="text-3xl moon-font">Rp 0 (0%)</h3>
-                </div>
-                <div class="card-cartoon p-5 bg-yellow-400">
-                    <p class="text-black/60 text-[10px] font-black uppercase italic">Cash Remaining</p>
-                    <h3 id="cashRemaining" class="text-3xl moon-font text-black">Rp 0</h3>
-                </div>
+                <div class="card-cartoon p-5 bg-blue-400 border-none"><p class="text-white/70 text-[10px] font-black uppercase italic">Market Value</p><h3 id="totalMarketValue" class="text-3xl moon-font text-white">Rp 0</h3></div>
+                <div class="card-cartoon p-5 bg-white"><p class="text-black/60 text-[10px] font-black uppercase italic">Total P/L</p><h3 id="totalPL" class="text-3xl moon-font">Rp 0</h3></div>
+                <div class="card-cartoon p-5 bg-yellow-400"><p class="text-black/60 text-[10px] font-black uppercase italic">Cash Left</p><h3 id="cashRemaining" class="text-3xl moon-font text-black">Rp 0</h3></div>
             </div>
 
-            <!-- Table -->
-            <div class="card-cartoon overflow-hidden">
+            <div class="card-cartoon overflow-hidden bg-white text-black">
                 <table class="w-full text-left">
-                    <thead class="bg-black text-white text-[12px] moon-font">
-                        <tr><th class="p-4">TICKER</th><th class="p-4">AVG</th><th class="p-4">LAST</th><th class="p-4">LOT</th><th class="p-4">GAIN/LOSS</th><th class="p-4">DEL</th></tr>
+                    <thead class="bg-black text-white text-[12px] moon-font italic">
+                        <tr><th class="p-4">TICKER</th><th class="p-4">AVG</th><th class="p-4">LAST</th><th class="p-4">LOT</th><th class="p-4">G/L</th><th class="p-4">DEL</th></tr>
                     </thead>
-                    <tbody id="stockBody" class="font-bold text-black"></tbody>
+                    <tbody id="stockBody" class="font-bold"></tbody>
                 </table>
             </div>
         </div>
 
-        <!-- SECTION: AIRDROP -->
+        <!-- SECTION: AIRDROP (STRICT VERSION) -->
         <div id="section-airdrop" class="hidden">
-            <div class="card-cartoon p-8 bg-white text-black mb-8">
-                <h2 class="text-4xl moon-font mb-6 text-green-500">💰 AIRDROP & PROFITS</h2>
+            <div class="card-cartoon p-8 bg-white text-black mb-8 border-dashed">
+                <h2 class="text-4xl moon-font mb-6 text-green-500 italic">💰 AIRDROP & DIV</h2>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
                     <div>
-                        <label class="text-[10px] font-black uppercase ml-2">Ticker</label>
-                        <!-- Ditambahkan list="tickerList" -->
-                        <input id="dropTicker" type="text" list="tickerList" class="w-full p-4 font-bold uppercase">
+                        <label class="text-[10px] font-black uppercase ml-2 text-slate-400">Ticker (Must be valid)</label>
+                        <!-- Ditambah list="tickerList" agar muncul suggest -->
+                        <input id="dropTicker" type="text" list="tickerList" oninput="validateInput('dropTicker', 'btnCollect')" placeholder="Contoh: BBCA" class="w-full p-4 font-bold uppercase">
                     </div>
-                    <div><label class="text-[10px] font-black uppercase ml-2">Amount (IDR Total)</label><input id="dropAmount" type="number" class="w-full p-4 font-bold"></div>
-                    <button onclick="addAirdrop()" class="btn-launch moon-font text-xl py-4">COLLECT!</button>
+                    <div>
+                        <label class="text-[10px] font-black uppercase ml-2 text-slate-400">Nominal Rp</label>
+                        <input id="dropAmount" type="number" placeholder="100000" class="w-full p-4 font-bold">
+                    </div>
+                    <button id="btnCollect" onclick="addAirdrop()" class="btn-launch moon-font text-xl py-4">COLLECT!</button>
                 </div>
+                <p id="airdropError" class="text-[10px] text-red-500 font-bold mt-2 hidden italic">⚠️ TICKER TIDAK DITEMUKAN DALAM DATABASE</p>
             </div>
+
             <div class="card-cartoon overflow-hidden bg-white text-black">
-                <div class="p-4 bg-green-100 border-b-4 border-black">
-                    <h3 class="moon-font">Total Extra Cash: <span id="totalAirdropDisplay" class="text-green-600">Rp 0</span></h3>
-                </div>
                 <table class="w-full text-left">
-                    <thead class="bg-black text-white text-[10px] moon-font">
-                        <tr><th class="p-4">DATE</th><th class="p-4">SOURCE</th><th class="p-4">AMOUNT</th><th class="p-4">ACTION</th></tr>
+                    <thead class="bg-green-500 text-white text-[10px] moon-font italic">
+                        <tr><th class="p-4">DATE</th><th class="p-4">TICKER</th><th class="p-4">AMOUNT</th><th class="p-4">DEL</th></tr>
                     </thead>
                     <tbody id="airdropBody" class="font-bold"></tbody>
                 </table>
@@ -134,59 +113,169 @@
         <!-- SECTION: CALCULATOR -->
         <div id="section-calculator" class="hidden text-black">
             <div class="card-cartoon p-8 bg-white">
-                <h2 class="text-4xl moon-font mb-8 text-orange-500">🚀 MOON CALCULATOR</h2>
+                <h2 class="text-4xl moon-font mb-8 text-orange-500 italic">🚀 DAMAGE CALC</h2>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-                    <div><label class="block text-xs font-black mb-1 uppercase ml-2">Buy Price</label><input id="calcBuyPrice" type="number" class="w-full p-4 bg-blue-50 font-black"></div>
-                    <div><label class="block text-xs font-black mb-1 uppercase ml-2">Sell Price</label><input id="calcSellPrice" type="number" class="w-full p-4 bg-orange-50 font-black"></div>
-                    <div><label class="block text-xs font-black mb-1 uppercase ml-2">Lot</label><input id="calcLots" type="number" class="w-full p-4 bg-yellow-50 font-black"></div>
+                    <input id="calcBuyPrice" type="number" class="p-4 bg-blue-50 font-black" placeholder="Buy Price">
+                    <input id="calcSellPrice" type="number" class="p-4 bg-orange-50 font-black" placeholder="Sell Price">
+                    <input id="calcLots" type="number" class="p-4 bg-yellow-50 font-black" placeholder="Lots">
                 </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 bg-slate-100 rounded-2xl border-4 border-dotted border-slate-300 mb-8">
-                    <div>
-                        <label class="block text-[10px] font-black mb-1 uppercase text-blue-600">Fee Beli (%)</label>
-                        <input id="feeBeliInput" type="number" step="0.01" value="0.15" class="w-full p-3 font-black">
-                    </div>
-                    <div>
-                        <label class="block text-[10px] font-black mb-1 uppercase text-orange-600">Fee Jual (%)</label>
-                        <input id="feeJualInput" type="number" step="0.01" value="0.25" class="w-full p-3 font-black">
-                    </div>
+                <div class="bg-black p-8 rounded-3xl text-white text-center">
+                    <p class="text-[10px] uppercase font-black mb-2 opacity-50">Estimated Net Profit</p>
+                    <p id="resNetPNL" class="text-5xl moon-font text-green-400">Rp 0</p>
                 </div>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8 bg-black p-6 rounded-3xl text-white">
-                    <div class="text-center"><p class="text-white/50 text-[10px] font-black uppercase">Total Capital</p><p id="resTotalBuy" class="text-xl font-black">Rp 0</p></div>
-                    <div class="text-center border-x border-white/20"><p class="text-white/50 text-[10px] font-black uppercase">Total Revenue</p><p id="resTotalSell" class="text-xl font-black">Rp 0</p></div>
-                    <div class="text-center"><p class="text-white/50 text-[10px] font-black uppercase">Net Profit</p><p id="resNetPNL" class="text-3xl moon-font text-green-400">Rp 0</p></div>
-                </div>
-                <button onclick="calculateDamage()" class="w-full bg-green-500 p-5 mt-6 rounded-2xl border-4 border-black moon-font text-2xl">UPDATE & CALC! 📊</button>
-            </div>
-        </div>
-
-        <!-- SECTION: LOGS -->
-        <div id="section-logs" class="hidden">
-            <div class="card-cartoon overflow-hidden bg-white text-black">
-                <table class="w-full text-left">
-                    <thead class="bg-orange-500 text-white moon-font text-xs">
-                        <tr><th class="p-4">DATE</th><th class="p-4">TICKER</th><th class="p-4">TYPE</th><th class="p-4">PRICE</th><th class="p-4">TOTAL</th></tr>
-                    </thead>
-                    <tbody id="logBody" class="font-bold"></tbody>
-                </table>
+                <button onclick="calculateDamage()" class="w-full bg-green-400 p-5 mt-6 rounded-2xl border-4 border-black moon-font text-2xl italic">CALCULATE!</button>
             </div>
         </div>
     </div>
 
     <script>
         const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSLMXaTt1rg99ycwKFPmPztOGjK55AV7OcjFBf4PVAObwcPX20m2laX7ngnvyEPR2qsOyuEiFrcbFw-/pub?gid=0&single=true&output=csv';
+        
         let portfolio = JSON.parse(localStorage.getItem('moon_porto')) || [];
-        let tradeLogs = JSON.parse(localStorage.getItem('moon_logs')) || [];
         let airdrops = JSON.parse(localStorage.getItem('moon_airdrops')) || [];
+        let validTickers = [];
         let livePrices = {};
 
         function save() {
             localStorage.setItem('moon_porto', JSON.stringify(portfolio));
-            localStorage.setItem('moon_logs', JSON.stringify(tradeLogs));
             localStorage.setItem('moon_airdrops', JSON.stringify(airdrops));
         }
 
+        // --- VALIDASI GLOBAL ---
+        function validateInput(inputId, buttonId) {
+            const input = document.getElementById(inputId);
+            const btn = document.getElementById(buttonId);
+            const val = input.value.toUpperCase().trim();
+            const err = document.getElementById('airdropError');
+
+            if (val === "") {
+                input.classList.remove('invalid-ticker');
+                btn.disabled = false;
+                if(err) err.classList.add('hidden');
+                return;
+            }
+
+            if (!validTickers.includes(val)) {
+                input.classList.add('invalid-ticker');
+                btn.disabled = true;
+                if(inputId === 'dropTicker') err.classList.remove('hidden');
+            } else {
+                input.classList.remove('invalid-ticker');
+                btn.disabled = false;
+                if(inputId === 'dropTicker') err.classList.add('hidden');
+            }
+        }
+
+        async function updateAllPrices() {
+            try {
+                const res = await fetch(CSV_URL);
+                const data = await res.text();
+                const datalist = document.getElementById('tickerList');
+                datalist.innerHTML = "";
+                validTickers = [];
+
+                data.split('\n').forEach(row => {
+                    const cols = row.split(',');
+                    if(cols[0]) {
+                        const t = cols[0].trim().toUpperCase();
+                        validTickers.push(t);
+                        livePrices[t] = parseFloat(cols[1]);
+                        const opt = document.createElement('option');
+                        opt.value = t;
+                        datalist.appendChild(opt);
+                    }
+                });
+                render();
+            } catch (e) { alert("Gagal konek ke Google Sheet!"); }
+        }
+
+        function addAirdrop() {
+            const tInput = document.getElementById('dropTicker');
+            const aInput = document.getElementById('dropAmount');
+            const ticker = tInput.value.toUpperCase().trim();
+            const amount = parseFloat(aInput.value);
+
+            if(!ticker || !amount) return;
+
+            airdrops.push({
+                id: Date.now(),
+                date: new Date().toISOString().split('T')[0],
+                ticker: ticker,
+                amount: amount
+            });
+
+            tInput.value = ""; aInput.value = "";
+            validateInput('dropTicker', 'btnCollect');
+            save(); render();
+        }
+
+        function processTrade() {
+            const tInput = document.getElementById('ticker');
+            const ticker = tInput.value.toUpperCase().trim();
+            const type = document.getElementById('tradeType').value;
+            const price = parseFloat(document.getElementById('price').value);
+            const lots = parseInt(document.getElementById('lots').value);
+
+            if(!ticker || !price || !lots) return;
+
+            const idx = portfolio.findIndex(s => s.ticker === ticker);
+            if(type === 'BUY') {
+                if(idx > -1) {
+                    const p = portfolio[idx];
+                    portfolio[idx].buyPrice = Math.round(((p.buyPrice * p.lots) + (price * lots)) / (p.lots + lots));
+                    portfolio[idx].lots += lots;
+                } else {
+                    portfolio.push({ ticker, buyPrice: price, lots });
+                }
+            } else {
+                if(idx > -1 && portfolio[idx].lots >= lots) {
+                    // Profit Realized masuk ke Airdrop sebagai 'SELL PROFIT'
+                    const profit = (price - portfolio[idx].buyPrice) * lots * 100;
+                    airdrops.push({ id: Date.now(), date: new Date().toISOString().split('T')[0], ticker: `${ticker} (SELL)`, amount: profit });
+                    
+                    if(portfolio[idx].lots === lots) portfolio.splice(idx, 1);
+                    else portfolio[idx].lots -= lots;
+                } else {
+                    alert("Lot tidak cukup!"); return;
+                }
+            }
+            tInput.value = ""; save(); render();
+        }
+
+        function render() {
+            // Render Portfolio
+            let marketVal = 0, costVal = 0;
+            document.getElementById('stockBody').innerHTML = portfolio.map(s => {
+                const last = livePrices[s.ticker] || s.buyPrice;
+                marketVal += (last * s.lots * 100);
+                costVal += (s.buyPrice * s.lots * 100);
+                const pl = ((last - s.buyPrice) / s.buyPrice * 100).toFixed(2);
+                return `<tr class="border-b-2">
+                    <td class="p-4 text-blue-600">${s.ticker}</td>
+                    <td>${s.buyPrice.toLocaleString()}</td>
+                    <td>${last.toLocaleString()}</td>
+                    <td>${s.lots}</td>
+                    <td class="${pl >= 0 ? 'text-green-500' : 'text-red-500'}">${pl}%</td>
+                    <td><button onclick="delStock('${s.ticker}')">✕</button></td>
+                </tr>`;
+            }).join('');
+
+            // Render Airdrops
+            let totalExtra = 0;
+            document.getElementById('airdropBody').innerHTML = airdrops.slice().reverse().map(a => {
+                totalExtra += a.amount;
+                return `<tr class="border-b"><td class="p-4 text-xs italic opacity-50">${a.date}</td><td class="p-4">${a.ticker}</td><td class="p-4 ${a.amount >= 0 ? 'text-green-600' : 'text-red-500'}">Rp ${a.amount.toLocaleString()}</td><td><button onclick="delAirdrop(${a.id})">✕</button></td></tr>`;
+            }).join('');
+
+            const initial = parseFloat(localStorage.getItem('moon_initial')) || 0;
+            document.getElementById('initialInvestment').value = initial;
+            document.getElementById('totalMarketValue').innerText = `Rp ${marketVal.toLocaleString()}`;
+            document.getElementById('totalPL').innerText = `Rp ${(marketVal - costVal + totalExtra).toLocaleString()}`;
+            document.getElementById('cashRemaining').innerText = `Rp ${(initial - costVal + totalExtra).toLocaleString()}`;
+        }
+
         function switchTab(tab) {
-            ['portfolio', 'airdrop', 'calculator', 'logs'].forEach(t => {
+            ['portfolio', 'airdrop', 'calculator'].forEach(t => {
                 document.getElementById('section-' + t).classList.add('hidden');
                 document.getElementById('tab-' + t).classList.remove('tab-active');
             });
@@ -194,177 +283,19 @@
             document.getElementById('tab-' + tab).classList.add('tab-active');
         }
 
-        // --- BARU: Update Autocomplete List ---
-        function updateTickerDatalist(tickers) {
-            const list = document.getElementById('tickerList');
-            list.innerHTML = tickers.map(t => `<option value="${t}">`).join('');
-        }
-
-        async function updateAllPrices() {
-            const btn = document.getElementById('btnRefresh'); btn.innerText = "SYNCING...";
-            try {
-                const res = await fetch(CSV_URL);
-                const data = await res.text();
-                const tickersFound = [];
-                data.split('\n').forEach(row => {
-                    const [t, p] = row.split(',');
-                    if(t) {
-                        const cleanTicker = t.trim().toUpperCase();
-                        livePrices[cleanTicker] = parseFloat(p);
-                        tickersFound.push(cleanTicker);
-                    }
-                });
-                // Update datalist pilihan
-                updateTickerDatalist(tickersFound);
-                
-                portfolio = portfolio.map(s => ({...s, currentPrice: livePrices[s.ticker] || s.currentPrice}));
-                save(); render();
-            } catch (e) { console.log("Gagal sync:", e); }
-            btn.innerText = "SYNC MARKET PRICES";
-        }
-
-        function processTrade() {
-            const ticker = document.getElementById('ticker').value.toUpperCase().trim();
-            const type = document.getElementById('tradeType').value;
-            const price = parseFloat(document.getElementById('price').value);
-            const lots = parseInt(document.getElementById('lots').value);
-            const date = document.getElementById('date').value || new Date().toISOString().split('T')[0];
-
-            if(!ticker || !price || !lots) return alert("Isi data dulu!");
-
-            const idx = portfolio.findIndex(s => s.ticker === ticker);
-
-            if (type === 'BUY') {
-                if (idx > -1) {
-                    const p = portfolio[idx];
-                    const newAvg = ((p.buyPrice * p.lots) + (price * lots)) / (p.lots + lots);
-                    portfolio[idx].lots += lots;
-                    portfolio[idx].buyPrice = Math.round(newAvg);
-                } else {
-                    portfolio.push({ ticker, buyPrice: price, lots, currentPrice: livePrices[ticker] || price });
-                }
-                tradeLogs.push({ date, ticker, type, price, lots, total: price * lots * 100 });
-            } else {
-                if (idx > -1) {
-                    if (lots > portfolio[idx].lots) return alert("Lot gak cukup!");
-                    const buyPrice = portfolio[idx].buyPrice;
-                    const profitPerShare = price - buyPrice;
-                    const totalRealized = profitPerShare * lots * 100;
-                    airdrops.push({ id: Date.now(), date, ticker: `${ticker} SELL`, amount: totalRealized });
-                    if (lots === portfolio[idx].lots) portfolio.splice(idx, 1);
-                    else portfolio[idx].lots -= lots;
-                    tradeLogs.push({ date, ticker, type, price, lots, total: price * lots * 100, realized: totalRealized });
-                } else return alert("Gak punya saham ini!");
-            }
-            save(); render();
-        }
-
-        function addAirdrop() {
-            const ticker = document.getElementById('dropTicker').value.toUpperCase().trim();
-            const amount = parseFloat(document.getElementById('dropAmount').value);
-            if(!ticker || !amount) return alert("Isi ticker & nominal!");
-            airdrops.push({ id: Date.now(), date: new Date().toISOString().split('T')[0], ticker: `${ticker} (DIV)`, amount });
-            document.getElementById('dropTicker').value = ''; document.getElementById('dropAmount').value = '';
-            save(); render();
-        }
-
+        function delStock(t) { if(confirm('Hapus?')) { portfolio = portfolio.filter(s => s.ticker !== t); save(); render(); } }
         function delAirdrop(id) { airdrops = airdrops.filter(a => a.id !== id); save(); render(); }
-
-        function saveInitial(event) {
-            const val = document.getElementById('initialInvestment').value;
-            localStorage.setItem('moon_initial', val);
-            event.currentTarget.innerText = "SAVED! 🚀";
-            setTimeout(() => { event.currentTarget.innerText = "SET & RELOAD 🔄"; render(); }, 600);
-        }
-
-        function render() {
-            const initial = parseFloat(localStorage.getItem('moon_initial')) || 0;
-            document.getElementById('initialInvestment').value = initial;
-            
-            let marketVal = 0, costVal = 0;
-            portfolio.forEach(s => {
-                marketVal += (s.lots * 100 * (s.currentPrice || s.buyPrice));
-                costVal += (s.lots * 100 * s.buyPrice);
-            });
-
-            document.getElementById('stockBody').innerHTML = portfolio.map(s => {
-                const curPrice = s.currentPrice || s.buyPrice;
-                const pl = ((curPrice - s.buyPrice) / s.buyPrice * 100).toFixed(2);
-                return `<tr class="border-b-2">
-                    <td class="p-4 text-blue-600">${s.ticker}</td>
-                    <td class="p-4">${s.buyPrice.toLocaleString()}</td>
-                    <td class="p-4">${curPrice.toLocaleString()}</td>
-                    <td class="p-4">${s.lots}</td>
-                    <td class="p-4 ${pl >= 0 ? 'text-green-500' : 'text-red-500'}">${pl}%</td>
-                    <td class="p-4"><button onclick="delStock('${s.ticker}')">✕</button></td>
-                </tr>`;
-            }).join('');
-
-            let totalExtra = 0;
-            document.getElementById('airdropBody').innerHTML = airdrops.slice().reverse().map(a => {
-                totalExtra += a.amount;
-                return `<tr class="border-b">
-                    <td class="p-4 text-slate-400">${a.date}</td>
-                    <td class="p-4">${a.ticker}</td>
-                    <td class="p-4 ${a.amount >= 0 ? 'text-green-600' : 'text-red-600'}">Rp ${a.amount.toLocaleString()}</td>
-                    <td class="p-4"><button onclick="delAirdrop(${a.id})" class="text-red-400">Del</button></td>
-                </tr>`;
-            }).join('');
-            document.getElementById('totalAirdropDisplay').innerText = `Rp ${totalExtra.toLocaleString()}`;
-
-            const totalProfit = (marketVal - costVal) + totalExtra;
-            const plPct = costVal > 0 ? (totalProfit / costVal * 100).toFixed(2) : 0;
-            
-            document.getElementById('totalMarketValue').innerText = `Rp ${marketVal.toLocaleString()}`;
-            document.getElementById('totalPL').innerText = `Rp ${totalProfit.toLocaleString()} (${plPct}%)`;
-            document.getElementById('totalPL').className = `text-3xl moon-font ${totalProfit >= 0 ? 'text-green-500' : 'text-red-500'}`;
-            document.getElementById('cashRemaining').innerText = `Rp ${(initial - costVal + totalExtra).toLocaleString()}`;
-
-            document.getElementById('logBody').innerHTML = tradeLogs.slice().reverse().map(l => `
-                <tr class="border-b">
-                    <td class="p-4 text-slate-400">${l.date}</td>
-                    <td class="p-4">${l.ticker}</td>
-                    <td class="p-4"><span class="${l.type === 'BUY' ? 'bg-blue-500' : 'bg-red-500'} text-white px-2 py-1 rounded">${l.type}</span></td>
-                    <td class="p-4">Rp ${l.price.toLocaleString()}</td>
-                    <td class="p-4">Rp ${l.total.toLocaleString()} ${l.realized ? `(<span class="${l.realized >= 0 ? 'text-green-600' : 'text-red-600'}">${l.realized >= 0 ? '+' : ''}${l.realized.toLocaleString()}</span>)` : ''}</td>
-                </tr>`).join('');
-        }
-
+        function saveInitial() { localStorage.setItem('moon_initial', document.getElementById('initialInvestment').value); render(); }
+        
         function calculateDamage() {
-            const bPrice = parseFloat(document.getElementById('calcBuyPrice').value) || 0;
-            const sPrice = parseFloat(document.getElementById('calcSellPrice').value) || 0;
-            const lots = parseInt(document.getElementById('calcLots').value) || 0;
-            const feeBeli = parseFloat(document.getElementById('feeBeliInput').value) || 0.15;
-            const feeJual = parseFloat(document.getElementById('feeJualInput').value) || 0.25;
-
-            const buyTotal = (bPrice * lots * 100) * (1 + feeBeli/100);
-            const sellTotal = (sPrice * lots * 100) * (1 - feeJual/100);
-            const net = sellTotal - buyTotal;
-            const pct = buyTotal > 0 ? (net / buyTotal * 100).toFixed(2) : 0;
-
-            document.getElementById('resTotalBuy').innerText = `Rp ${Math.round(buyTotal).toLocaleString()}`;
-            document.getElementById('resTotalSell').innerText = `Rp ${Math.round(sellTotal).toLocaleString()}`;
-            document.getElementById('resNetPNL').innerText = `Rp ${Math.round(net).toLocaleString()} (${pct}%)`;
-            document.getElementById('resNetPNL').className = `text-3xl moon-font ${net >= 0 ? 'text-green-400' : 'text-red-500'}`;
+            const b = parseFloat(document.getElementById('calcBuyPrice').value) || 0;
+            const s = parseFloat(document.getElementById('calcSellPrice').value) || 0;
+            const l = parseInt(document.getElementById('calcLots').value) || 0;
+            const net = (s * l * 100 * 0.9975) - (b * l * 100 * 1.0015);
+            document.getElementById('resNetPNL').innerText = `Rp ${Math.round(net).toLocaleString()}`;
         }
 
-        function delStock(t) { if(confirm("Hapus?")) { portfolio = portfolio.filter(s => s.ticker !== t); save(); render(); } }
-        function exportData() {
-            const data = { portfolio, tradeLogs, airdrops, initial: localStorage.getItem('moon_initial') };
-            const blob = new Blob([JSON.stringify(data)], {type: 'application/json'});
-            const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `MOON_PORTO.json`; a.click();
-        }
-        function importData(e) {
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                const data = JSON.parse(event.target.result);
-                portfolio = data.portfolio || []; tradeLogs = data.tradeLogs || []; airdrops = data.airdrops || [];
-                localStorage.setItem('moon_initial', data.initial || 0); save(); render(); alert("Restore Sukses!");
-            };
-            reader.readAsText(e.target.files[0]);
-        }
-
-        window.onload = () => { render(); updateAllPrices(); };
+        window.onload = () => { updateAllPrices(); };
     </script>
 </body>
 </html>
