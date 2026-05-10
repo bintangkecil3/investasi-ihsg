@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Porto to the Moon - Strict Airdrop</title>
+    <title>Porto to the Moon - Complete Edition</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Bungee&family=Fredoka+One&display=swap');
@@ -16,15 +16,23 @@
         .btn-launch { background-color: var(--moon-orange); color: white; border: 3px solid #000; box-shadow: 4px 4px 0px #000; transition: all 0.1s; cursor: pointer; }
         .btn-launch:active:not(:disabled) { transform: translate(2px, 2px); box-shadow: 0px 0px 0px #000; }
         .btn-launch:disabled { background-color: #94a3b8; cursor: not-allowed; box-shadow: 2px 2px 0px #000; opacity: 0.6; }
+        .btn-utility { background: #000; color: #fff; font-size: 10px; padding: 6px 12px; border-radius: 99px; text-transform: uppercase; font-weight: 900; transition: opacity 0.2s; }
+        .btn-utility:hover { opacity: 0.8; }
         .invalid-ticker { border-color: #ef4444 !important; background-color: #fee2e2 !important; }
         .hidden { display: none; }
     </style>
 </head>
 <body class="p-4 md:p-8">
-    <!-- List Ticker untuk Auto-Suggest -->
     <datalist id="tickerList"></datalist>
 
     <div class="max-w-6xl mx-auto">
+        <!-- TOMBOL BACKUP & RESTORE IS BACK! -->
+        <div class="flex justify-end gap-3 mb-4">
+            <button onclick="exportData()" class="btn-utility">Back Up Data</button>
+            <button onclick="document.getElementById('importFile').click()" class="btn-utility">Restore Data</button>
+            <input type="file" id="importFile" class="hidden" onchange="importData(event)">
+        </div>
+
         <header class="flex flex-col items-center mb-10 text-center">
             <h1 class="text-5xl md:text-7xl moon-font text-white drop-shadow-[6px_6px_0px_rgba(0,0,0,1)] italic">PORTO <span class="text-[var(--slime-green)]">TO THE MOON</span></h1>
         </header>
@@ -64,7 +72,7 @@
                 </div>
             </div>
 
-            <!-- Stats -->
+            <!-- Dashboard Stats -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 text-black">
                 <div class="card-cartoon p-5 bg-blue-400 border-none"><p class="text-white/70 text-[10px] font-black uppercase italic">Market Value</p><h3 id="totalMarketValue" class="text-3xl moon-font text-white">Rp 0</h3></div>
                 <div class="card-cartoon p-5 bg-white"><p class="text-black/60 text-[10px] font-black uppercase italic">Total P/L</p><h3 id="totalPL" class="text-3xl moon-font">Rp 0</h3></div>
@@ -81,14 +89,13 @@
             </div>
         </div>
 
-        <!-- SECTION: AIRDROP (STRICT VERSION) -->
+        <!-- SECTION: AIRDROP -->
         <div id="section-airdrop" class="hidden">
             <div class="card-cartoon p-8 bg-white text-black mb-8 border-dashed">
                 <h2 class="text-4xl moon-font mb-6 text-green-500 italic">💰 AIRDROP & DIV</h2>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
                     <div>
                         <label class="text-[10px] font-black uppercase ml-2 text-slate-400">Ticker (Must be valid)</label>
-                        <!-- Ditambah list="tickerList" agar muncul suggest -->
                         <input id="dropTicker" type="text" list="tickerList" oninput="validateInput('dropTicker', 'btnCollect')" placeholder="Contoh: BBCA" class="w-full p-4 font-bold uppercase">
                     </div>
                     <div>
@@ -141,7 +148,40 @@
             localStorage.setItem('moon_airdrops', JSON.stringify(airdrops));
         }
 
-        // --- VALIDASI GLOBAL ---
+        // --- BACKUP & RESTORE FUNCTIONS ---
+        function exportData() {
+            const data = {
+                portfolio,
+                airdrops,
+                initial: localStorage.getItem('moon_initial') || 0
+            };
+            const blob = new Blob([JSON.stringify(data)], {type: 'application/json'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `PORTO_MOON_BACKUP_${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+        }
+
+        function importData(e) {
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                try {
+                    const data = JSON.parse(ev.target.result);
+                    portfolio = data.portfolio || [];
+                    airdrops = data.airdrops || [];
+                    localStorage.setItem('moon_initial', data.initial || 0);
+                    save();
+                    render();
+                    alert("Data berhasil direstore, Bos!");
+                } catch (err) {
+                    alert("File tidak valid!");
+                }
+            };
+            reader.readAsText(e.target.files[0]);
+        }
+
+        // --- VALIDASI & SYNC ---
         function validateInput(inputId, buttonId) {
             const input = document.getElementById(inputId);
             const btn = document.getElementById(buttonId);
@@ -167,6 +207,8 @@
         }
 
         async function updateAllPrices() {
+            const btn = document.getElementById('btnRefresh');
+            btn.innerText = "SYNCING...";
             try {
                 const res = await fetch(CSV_URL);
                 const data = await res.text();
@@ -187,6 +229,7 @@
                 });
                 render();
             } catch (e) { alert("Gagal konek ke Google Sheet!"); }
+            btn.innerText = "SYNC PRICES 🔄";
         }
 
         function addAirdrop() {
@@ -194,16 +237,8 @@
             const aInput = document.getElementById('dropAmount');
             const ticker = tInput.value.toUpperCase().trim();
             const amount = parseFloat(aInput.value);
-
             if(!ticker || !amount) return;
-
-            airdrops.push({
-                id: Date.now(),
-                date: new Date().toISOString().split('T')[0],
-                ticker: ticker,
-                amount: amount
-            });
-
+            airdrops.push({ id: Date.now(), date: new Date().toISOString().split('T')[0], ticker, amount });
             tInput.value = ""; aInput.value = "";
             validateInput('dropTicker', 'btnCollect');
             save(); render();
@@ -229,21 +264,16 @@
                 }
             } else {
                 if(idx > -1 && portfolio[idx].lots >= lots) {
-                    // Profit Realized masuk ke Airdrop sebagai 'SELL PROFIT'
                     const profit = (price - portfolio[idx].buyPrice) * lots * 100;
                     airdrops.push({ id: Date.now(), date: new Date().toISOString().split('T')[0], ticker: `${ticker} (SELL)`, amount: profit });
-                    
                     if(portfolio[idx].lots === lots) portfolio.splice(idx, 1);
                     else portfolio[idx].lots -= lots;
-                } else {
-                    alert("Lot tidak cukup!"); return;
-                }
+                } else { alert("Lot tidak cukup!"); return; }
             }
             tInput.value = ""; save(); render();
         }
 
         function render() {
-            // Render Portfolio
             let marketVal = 0, costVal = 0;
             document.getElementById('stockBody').innerHTML = portfolio.map(s => {
                 const last = livePrices[s.ticker] || s.buyPrice;
@@ -260,7 +290,6 @@
                 </tr>`;
             }).join('');
 
-            // Render Airdrops
             let totalExtra = 0;
             document.getElementById('airdropBody').innerHTML = airdrops.slice().reverse().map(a => {
                 totalExtra += a.amount;
