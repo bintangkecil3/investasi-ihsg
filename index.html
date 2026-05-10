@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IHSG Portfolio Monitor - Google Finance</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-50 p-4 md:p-8">
+    <div class="max-w-5xl mx-auto">
+        <header class="mb-8">
+            <h1 class="text-3xl font-bold text-slate-800">IHSG Portfolio Dashboard</h1>
+            <p class="text-slate-500 italic">Data Source: Google Finance via Sheets</p>
+        </header>
+
+        <!-- Form Input -->
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 mb-6">
+            <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+                <input id="ticker" type="text" placeholder="Kode (e.g. BBRI)" class="border p-2 rounded uppercase font-bold text-center">
+                <input id="price" type="number" placeholder="Harga Beli" class="border p-2 rounded">
+                <input id="lots" type="number" placeholder="Jumlah Lot" class="border p-2 rounded">
+                <select id="category" class="border p-2 rounded bg-white">
+                    <option value="Dividen">Dividen (Core)</option>
+                    <option value="Trading">Trading (Swing)</option>
+                </select>
+                <button onclick="addStock()" class="bg-blue-600 text-white font-bold py-2 rounded hover:bg-blue-700 transition">Tambah</button>
+            </div>
+            <div class="mt-4 flex items-center gap-4 border-t pt-4">
+                <div class="flex-1">
+                    <label class="text-xs font-bold text-slate-500 uppercase">Modal Awal Investasi</label>
+                    <input id="initialInvestment" type="number" onchange="saveInitial()" placeholder="Rp" class="block w-full border-b-2 border-slate-200 focus:border-blue-500 outline-none py-1 font-bold text-lg">
+                </div>
+                <button onclick="updateAllPrices()" id="btnRefresh" class="bg-emerald-500 text-white px-6 py-2 rounded-lg font-bold hover:bg-emerald-600 transition shadow-md mt-4">Refresh Harga Google</button>
+            </div>
+        </div>
+
+        <!-- Dashboard Stats -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="bg-white p-5 rounded-xl shadow-sm border-l-4 border-blue-500">
+                <p class="text-slate-400 text-xs font-bold uppercase">Nilai Pasar</p>
+                <h3 id="totalMarketValue" class="text-2xl font-bold">Rp 0</h3>
+            </div>
+            <div class="bg-white p-5 rounded-xl shadow-sm border-l-4 border-emerald-500">
+                <p class="text-slate-400 text-xs font-bold uppercase">Total Profit/Loss</p>
+                <h3 id="totalPL" class="text-2xl font-bold text-emerald-600">Rp 0 (0%)</h3>
+            </div>
+            <div class="bg-white p-5 rounded-xl shadow-sm border-l-4 border-purple-500">
+                <p class="text-slate-400 text-xs font-bold uppercase">Sisa Kas</p>
+                <h3 id="cashRemaining" class="text-2xl font-bold">Rp 0</h3>
+            </div>
+        </div>
+
+        <!-- Table -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden mb-8">
+            <table class="w-full text-left">
+                <thead class="bg-slate-50 text-slate-600 text-xs font-bold uppercase border-b">
+                    <tr>
+                        <th class="p-4">Emiten</th>
+                        <th class="p-4">Kat.</th>
+                        <th class="p-4 text-center">Porsi (%)</th>
+                        <th class="p-4">Avg Price</th>
+                        <th class="p-4 font-bold">Market Price</th>
+                        <th class="p-4">Lot</th>
+                        <th class="p-4">P/L %</th>
+                        <th class="p-4 text-center">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody id="stockBody" class="text-sm"></tbody>
+            </table>
+        </div>
+
+        <!-- Strategy Advice -->
+        <div id="adviceContainer" class="bg-amber-50 p-6 rounded-xl border border-amber-100 hidden">
+            <h2 class="font-bold text-amber-900 mb-2">💡 Pertimbangan Rebalancing</h2>
+            <ul id="rebalanceAdvice" class="list-disc ml-5 text-sm text-amber-800 space-y-1"></ul>
+        </div>
+    </div>
+
+    <script>
+        // --- KONFIGURASI: GANTI DENGAN LINK CSV GOOGLE SHEETS ANDA ---
+        const GOOGLE_SHEETS_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSLMXaTt1rg99ycwKFPmPztOGjK55AV7OcjFBf4PVAObwcPX20m2laX7ngnvyEPR2qsOyuEiFrcbFw-/pub?gid=0&single=true&output=csv';
+
+        let portfolio = JSON.parse(localStorage.getItem('ihsg_v3_data')) || [];
+        let livePrices = {};
+
+        function saveInitial() {
+            localStorage.setItem('ihsg_v3_initial', document.getElementById('initialInvestment').value);
+            renderPortfolio();
+        }
+
+        async function updateAllPrices() {
+            const btn = document.getElementById('btnRefresh');
+            if(GOOGLE_SHEETS_CSV_URL === 'PASTE_LINK_CSV_ANDA_DISINI') return alert("Masukkan URL CSV Google Sheets Anda di dalam kode!");
+            
+            btn.disabled = true;
+            btn.innerText = "Syncing...";
+
+            try {
+                const response = await fetch(GOOGLE_SHEETS_CSV_URL);
+                const data = await response.text();
+                const rows = data.split('\n');
+                
+                rows.forEach(row => {
+                    const cols = row.split(',');
+                    if(cols.length >= 2) {
+                        const ticker = cols[0].replace(/"/g, "").trim().toUpperCase();
+                        const price = parseFloat(cols[1]);
+                        if(ticker && !isNaN(price)) livePrices[ticker] = price;
+                    }
+                });
+
+                portfolio = portfolio.map(item => ({
+                    ...item,
+                    currentPrice: livePrices[item.ticker] || item.currentPrice
+                }));
+
+                saveAndRefresh();
+            } catch (e) {
+                alert("Gagal ambil data. Cek apakah Google Sheet sudah di-Publish as CSV.");
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "Refresh Harga Google";
+            }
+        }
+
+        function addStock() {
+            const ticker = document.getElementById('ticker').value.toUpperCase().trim();
+            const buyPrice = parseFloat(document.getElementById('price').value);
+            const lots = parseInt(document.getElementById('lots').value);
+            const category = document.getElementById('category').value;
+
+            if(!ticker || isNaN(buyPrice) || isNaN(lots)) return alert("Isi data dengan lengkap!");
+
+            portfolio.push({ 
+                id: Date.now(), 
+                ticker, 
+                buyPrice, 
+                lots, 
+                category, 
+                currentPrice: livePrices[ticker] || buyPrice 
+            });
+            
+            saveAndRefresh();
+            document.getElementById('ticker').value = '';
+            document.getElementById('price').value = '';
+            document.getElementById('lots').value = '';
+        }
+
+        function deleteStock(id) {
+            if(confirm("Hapus emiten?")) {
+                portfolio = portfolio.filter(s => s.id !== id);
+                saveAndRefresh();
+            }
+        }
+
+        function saveAndRefresh() {
+            localStorage.setItem('ihsg_v3_data', JSON.stringify(portfolio));
+            renderPortfolio();
+        }
+
+        function renderPortfolio() {
+            const body = document.getElementById('stockBody');
+            const initialInv = parseFloat(localStorage.getItem('ihsg_v3_initial')) || 0;
+            document.getElementById('initialInvestment').value = initialInv;
+            
+            body.innerHTML = '';
+            let totalMarket = 0;
+            let totalCost = 0;
+
+            portfolio.forEach(s => {
+                totalMarket += (s.lots * 100 * s.currentPrice);
+                totalCost += (s.lots * 100 * s.buyPrice);
+            });
+
+            portfolio.forEach(s => {
+                const marketVal = s.lots * 100 * s.currentPrice;
+                const weight = totalMarket > 0 ? (marketVal / totalMarket * 100).toFixed(1) : 0;
+                const pl = ((s.currentPrice - s.buyPrice) / s.buyPrice * 100).toFixed(2);
+                
+                body.innerHTML += `
+                    <tr class="border-b hover:bg-slate-50 transition">
+                        <td class="p-4 font-bold text-blue-800">${s.ticker}</td>
+                        <td class="p-4 text-xs uppercase font-semibold">${s.category}</td>
+                        <td class="p-4 text-center font-medium">${weight}%</td>
+                        <td class="p-4">Rp ${s.buyPrice.toLocaleString()}</td>
+                        <td class="p-4 font-bold">Rp ${s.currentPrice.toLocaleString()}</td>
+                        <td class="p-4">${s.lots}</td>
+                        <td class="p-4 font-bold ${pl >= 0 ? 'text-emerald-600' : 'text-red-600'}">${pl}%</td>
+                        <td class="p-4 text-center"><button onclick="deleteStock(${s.id})" class="text-slate-300 hover:text-red-500">✕</button></td>
+                    </tr>
+                `;
+            });
+
+            const plVal = totalMarket - totalCost;
+            const plPct = totalCost > 0 ? (plVal / totalCost * 100).toFixed(2) : 0;
+            
+            document.getElementById('totalMarketValue').innerText = `Rp ${totalMarket.toLocaleString()}`;
+            document.getElementById('totalPL').innerText = `Rp ${plVal.toLocaleString()} (${plPct}%)`;
+            document.getElementById('cashRemaining').innerText = `Rp ${(initialInv - totalCost).toLocaleString()}`;
+            
+            generateAdvice(totalMarket, initialInv - totalCost);
+        }
+
+        function generateAdvice(totalMarket, cash) {
+            const adviceList = document.getElementById('rebalanceAdvice');
+            const container = document.getElementById('adviceContainer');
+            adviceList.innerHTML = '';
+            
+            if(portfolio.length > 0) container.classList.remove('hidden');
+
+            portfolio.forEach(s => {
+                const w = (s.lots * 100 * s.currentPrice) / totalMarket * 100;
+                if(w > 25) adviceList.innerHTML += `<li>⚠️ <b>${s.ticker}</b> terlalu dominan (${w.toFixed(1)}%). Batasi porsi maksimal 20-25% agar risiko terjaga.</li>`;
+            });
+
+            const divValue = portfolio.filter(s => s.category === 'Dividen').reduce((acc, s) => acc + (s.lots * 100 * s.currentPrice), 0);
+            const divWeight = (divValue / totalMarket * 100) || 0;
+            if(divWeight < 40) adviceList.innerHTML += `<li>💡 Porsi <b>Dividen</b> Anda rendah (${divWeight.toFixed(1)}%). Pertimbangkan tambah saham bluechip dividen untuk stabilitas jangka panjang.</li>`;
+        }
+
+        window.onload = renderPortfolio;
+    </script>
+</body>
+</html>
